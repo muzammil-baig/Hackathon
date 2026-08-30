@@ -6,6 +6,7 @@ import Dashboard from "@/pages/Dashboard";
 import IndexPage from "@/pages/IndexPage";
 import TreeView from "@/pages/TreeView";
 import QueryPage from "@/pages/QueryPage";
+import ComparePage from "@/pages/ComparePage";
 import Settings from "@/pages/Settings";
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
               <Route path="/index" element={<IndexPage />} />
               <Route path="/tree/:conversationId?" element={<TreeView />} />
               <Route path="/query/:conversationId?" element={<QueryPage />} />
+              <Route path="/compare/:conversationId?" element={<ComparePage />} />
               <Route path="/settings" element={<Settings />} />
             </Routes>
           </main>

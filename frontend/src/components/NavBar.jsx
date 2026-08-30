@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { LayoutDashboard, Upload, GitBranch, MessageSquare, Settings, Activity } from "lucide-react";
+import { LayoutDashboard, Upload, GitBranch, MessageSquare, Settings, Activity, GitCompare } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -10,6 +10,7 @@ const navItems = [
   { to: "/index", label: "INDEX", icon: Upload },
   { to: "/tree", label: "TREE VIEW", icon: GitBranch },
   { to: "/query", label: "QUERY", icon: MessageSquare },
+  { to: "/compare", label: "COMPARE", icon: GitCompare },
   { to: "/settings", label: "SETTINGS", icon: Settings },
 ];
 

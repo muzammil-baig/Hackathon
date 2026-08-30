@@ -153,39 +153,25 @@ async def get_status(conversation_id: str):
     return status
 
 
-# ── Query ────────────────────────────────────────────────────────────────────
-@api_router.post("/query", response_model=QueryResponse)
-async def query_conversation(request: QueryRequest):
-    if not RAPTOR_READY:
-        raise HTTPException(503, "ML packages not installed yet.")
-
-    conv_id = request.conversation_id
-    tree = index_store.get(conv_id)
-    if not tree:
-        raise HTTPException(404, f"Conversation '{conv_id}' not indexed")
-
-    start_time = time.time()
-
+# ── Query helpers (shared by /query and /compare) ─────────────────────────────
+async def _raptor_query(request, tree):
+    """Run RAPTOR retrieval + LLM answer. Returns dict."""
     root = tree.nodes.get(tree.root_id)
     if not root:
-        raise HTTPException(500, "Root node not found in tree")
-
+        raise ValueError("Root node missing")
     root_dict = root.model_dump() if hasattr(root, "model_dump") else dict(root)
     root_dict["similarity"] = 1.0
 
-    # Retrieve candidates
     if is_multihop_query(request.query):
-        raw_candidates = await search_similar_nodes(conv_id, request.query, top_k=15)
+        raw_candidates = await search_similar_nodes(request.conversation_id, request.query, top_k=15)
         topic_cands = [c for c in raw_candidates if c["level"] in ("SECTION", "TOPIC")]
         matched_ids = [c["node_id"] for c in topic_cands[:3]]
-        multihop_chunks = select_multihop(tree, matched_ids) if matched_ids else []
-        candidates = raw_candidates + multihop_chunks
+        candidates = raw_candidates + (select_multihop(tree, matched_ids) if matched_ids else [])
     else:
-        candidates = await search_similar_nodes(conv_id, request.query, top_k=20)
+        candidates = await search_similar_nodes(request.conversation_id, request.query, top_k=20)
 
     selected, is_fallback = select_nodes(candidates, root_dict, request.token_budget)
 
-    # Enrich with full text from tree
     enriched = []
     for sel in selected:
         node = tree.nodes.get(sel["node_id"])
@@ -198,7 +184,6 @@ async def query_conversation(request: QueryRequest):
 
     context_text = assemble_context(enriched)
     answer, latency_ms = await answer_question(request.query, context_text, request.model)
-
     if is_fallback:
         answer += "\n\n*Note: Limited context found for this query.*"
 
@@ -206,33 +191,112 @@ async def query_conversation(request: QueryRequest):
     answer_tokens = count_tokens(answer)
     estimated_raw = tree.stats.get("estimated_raw_tokens", 0)
     reduction_pct = max(0, int((1 - context_tokens / max(1, estimated_raw)) * 100)) if estimated_raw else 0
-    total_latency = int((time.time() - start_time) * 1000)
 
-    nodes_used = [
-        {
-            "node_id": n["node_id"],
-            "level": n["level"],
-            "similarity": round(n.get("similarity", 0), 3),
-            "token_count": n.get("token_count", 0),
-            "line_range": list(n.get("line_range", [0, 0])),
-            "topic_label": n.get("topic_label", ""),
-        }
-        for n in enriched
-    ]
-
-    return QueryResponse(
-        answer=answer,
-        nodes_used=nodes_used,
-        token_counts={
+    return {
+        "answer": answer,
+        "nodes_used": [
+            {
+                "node_id": n["node_id"],
+                "level": n["level"],
+                "similarity": round(n.get("similarity", 0), 3),
+                "token_count": n.get("token_count", 0),
+                "line_range": list(n.get("line_range", [0, 0])),
+                "topic_label": n.get("topic_label", ""),
+            }
+            for n in enriched
+        ],
+        "token_counts": {
             "context_tokens": context_tokens,
             "token_budget": request.token_budget,
             "answer_tokens": answer_tokens,
             "estimated_raw_tokens": estimated_raw,
             "reduction_pct": reduction_pct,
-            "latency_ms": total_latency,
+            "latency_ms": latency_ms,
         },
-        latency_ms=total_latency,
+        "latency_ms": latency_ms,
+    }
+
+
+async def _raw_query(request, tree):
+    """Run query with ALL raw chunks as context (no RAPTOR retrieval)."""
+    chunks = [n for n in tree.nodes.values()
+              if (hasattr(n, "level") and n.level == "CHUNK") or
+              (isinstance(n, dict) and n.get("level") == "CHUNK")]
+
+    def start_line(c):
+        lr = c.line_range if hasattr(c, "line_range") else c.get("line_range", [0, 0])
+        return lr[0] if isinstance(lr, (list, tuple)) else 0
+
+    chunks.sort(key=start_line)
+
+    parts = ["=== FULL CONVERSATION (RAW) ===\n"]
+    for chunk in chunks:
+        text = chunk.text if hasattr(chunk, "text") else chunk.get("text", "")
+        lr = chunk.line_range if hasattr(chunk, "line_range") else chunk.get("line_range", [0, 0])
+        s, e = (lr[0], lr[1]) if isinstance(lr, (list, tuple)) else (0, 0)
+        parts.append(f"[Lines {s}–{e}]\n{text}")
+
+    raw_context = "\n\n".join(parts)
+
+    # Cap at 80K tokens (Claude supports 200K)
+    raw_tokens = count_tokens(raw_context)
+    if raw_tokens > 80000:
+        chars_target = int(len(raw_context) * 80000 / raw_tokens)
+        raw_context = raw_context[:chars_target] + "\n\n[... truncated for length ...]"
+        raw_tokens = count_tokens(raw_context)
+
+    answer, latency_ms = await answer_question(request.query, raw_context, request.model)
+    return {
+        "answer": answer,
+        "context_tokens": raw_tokens,
+        "answer_tokens": count_tokens(answer),
+        "latency_ms": latency_ms,
+    }
+
+
+# ── Query ────────────────────────────────────────────────────────────────────
+@api_router.post("/query", response_model=QueryResponse)
+async def query_conversation(request: QueryRequest):
+    if not RAPTOR_READY:
+        raise HTTPException(503, "ML packages not installed yet.")
+    tree = index_store.get(request.conversation_id)
+    if not tree:
+        raise HTTPException(404, f"Conversation '{request.conversation_id}' not indexed")
+
+    result = await _raptor_query(request, tree)
+    return QueryResponse(**result)
+
+
+# ── Compare: RAPTOR vs Raw ────────────────────────────────────────────────────
+@api_router.post("/compare")
+async def compare_query(request: QueryRequest):
+    if not RAPTOR_READY:
+        raise HTTPException(503, "ML packages not installed yet.")
+    tree = index_store.get(request.conversation_id)
+    if not tree:
+        raise HTTPException(404, f"Conversation '{request.conversation_id}' not indexed")
+
+    start = time.time()
+    raptor_result, raw_result = await asyncio.gather(
+        _raptor_query(request, tree),
+        _raw_query(request, tree),
     )
+    total_ms = int((time.time() - start) * 1000)
+
+    raptor_tc = raptor_result["token_counts"]
+    return {
+        "raptor": raptor_result,
+        "raw": raw_result,
+        "summary": {
+            "raptor_tokens": raptor_tc["context_tokens"],
+            "raw_tokens": raw_result["context_tokens"],
+            "estimated_full_tokens": raptor_tc["estimated_raw_tokens"],
+            "reduction_pct": raptor_tc["reduction_pct"],
+            "raptor_latency_ms": raptor_result["latency_ms"],
+            "raw_latency_ms": raw_result["latency_ms"],
+            "total_latency_ms": total_ms,
+        },
+    }
 
 
 # ── Delete ────────────────────────────────────────────────────────────────────

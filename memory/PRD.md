@@ -107,4 +107,12 @@ Users lose context in long AI chats because platforms either drop old messages o
 ## Test Conversations
 - `test-demo-1` — 4 messages about RAPTOR (small demo)
 - `test-index-flow` — 12 messages about ML (created by testing agent)
-- `ml-recommendation-system` — **52 messages (16.9K raw tokens)** — Production ML recommendation system design: FAISS ANN search, tiered Redis caching, EKS vs Lambda, daily retraining pipeline, cold start, fairness, A/B testing, disaster recovery, GDPR compliance. **5 topics, 49 chunks, 77% token reduction** (3.8K context / 16.9K raw)
+- `ml-recommendation-system` — **52 messages (17K raw tokens)** — Production ML recommendation system: FAISS ANN, tiered caching, EKS, daily retraining, cold start, fairness, A/B testing. **5 topics, 49 chunks, 76% reduction**
+- `fintech-data-platform` — **44 messages (14.9K raw tokens)** — Modern fintech data platform: Kafka/Flink, Apache Iceberg, dbt, ClickHouse, ML platform, data governance. **5 topics, 42 chunks, 73% reduction**
+- `cloud-security-fintech` — **24 messages (10.6K raw tokens)** — Cloud security program: PCI-DSS CDE isolation, zero trust IAM, WAF, SIEM, incident response, compliance. **5 topics, 24 chunks, 62% reduction**
+- `fintech-architecture-complete` — **110 messages (37.7K raw tokens)** — Complete fintech platform: ML + data platform + security. **5 topics, 105 chunks, 89-91% reduction** ← FLAGSHIP DEMO
+
+## New Features (Feb 2026 update)
+- **Compare Page** (`/compare`): Side-by-side RAPTOR vs Full Raw context comparison. Both queries run concurrently. Shows token meters, reduction %, speed delta, and side-by-side answers.
+- **Markdown Renderer** (`MarkdownRenderer.jsx`): Custom renderer for ##headers, **bold**, `code`, lists, tables, code blocks. Answers render as polished reports.
+- **Large Conversation Demo**: `fintech-architecture-complete` — 110 messages, 37.7K tokens → **91% token reduction** (3,368 context / 38,482 raw)

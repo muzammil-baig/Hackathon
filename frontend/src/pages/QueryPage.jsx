@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, ChevronDown, ChevronUp, AlertCircle, Loader } from "lucide-react";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -159,9 +160,7 @@ export default function QueryPage() {
             {/* Answer */}
             <div className="bg-[#0F0F11] border border-[#27272A] p-5">
               <p className="text-[9px] font-mono-ibm tracking-[0.2em] uppercase text-[#71717A] mb-3">ANSWER</p>
-              <p className="text-sm text-[#F4F4F5] leading-relaxed font-sans-ibm whitespace-pre-wrap" data-testid="answer-text">
-                {result.answer}
-              </p>
+              <MarkdownRenderer content={result.answer} data-testid="answer-text" />
             </div>
 
             {/* Token bar */}
