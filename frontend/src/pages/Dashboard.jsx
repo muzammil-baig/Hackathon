@@ -46,6 +46,10 @@ export default function Dashboard() {
   const totalMsgs = conversations.reduce((s, c) => s + (c.stats?.total_messages || 0), 0);
   const totalChunks = conversations.reduce((s, c) => s + (c.stats?.total_chunks || 0), 0);
   const totalRaw = conversations.reduce((s, c) => s + (c.stats?.estimated_raw_tokens || 0), 0);
+  const TOKEN_BUDGET = 4000;
+  const avgReduction = conversations.length
+    ? Math.max(0, Math.round((1 - TOKEN_BUDGET / Math.max(1, totalRaw / Math.max(1, conversations.length))) * 100))
+    : 0;
 
   return (
     <div className="p-8 min-h-full" data-testid="dashboard-page">
@@ -70,8 +74,12 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <StatCard label="Conversations" value={conversations.length} />
         <StatCard label="Total Messages" value={totalMsgs.toLocaleString()} />
-        <StatCard label="Total Chunks" value={totalChunks.toLocaleString()} />
         <StatCard label="Est. Raw Tokens" value={totalRaw > 1000 ? `${(totalRaw / 1000).toFixed(1)}K` : totalRaw} />
+        <StatCard
+          label="Avg Token Reduction"
+          value={conversations.length ? `${avgReduction}%` : "—"}
+          sub={conversations.length ? `4K context from ~${(totalRaw / Math.max(1, conversations.length) / 1000).toFixed(1)}K raw` : "Index a conversation to see"}
+        />
       </div>
 
       {/* Conversations table */}
@@ -107,13 +115,16 @@ export default function Dashboard() {
             <table className="w-full text-xs font-mono-ibm">
               <thead>
                 <tr className="border-b border-[#27272A]">
-                  {["CONVERSATION ID", "MESSAGES", "TOPICS", "CHUNKS", "RAW TOKENS", "ACTIONS"].map(h => (
+                  {["CONVERSATION ID", "MESSAGES", "TOPICS", "CHUNKS", "RAW TOKENS", "MAX REDUCTION", "ACTIONS"].map(h => (
                     <th key={h} className="px-4 py-2.5 text-left text-[9px] tracking-[0.15em] text-[#71717A]">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {conversations.map(({ conversation_id, stats }, i) => (
+                {conversations.map(({ conversation_id, stats }, i) => {
+                  const rawTok = stats?.estimated_raw_tokens || 0;
+                  const reduction = rawTok > TOKEN_BUDGET ? Math.round((1 - TOKEN_BUDGET / rawTok) * 100) : 0;
+                  return (
                   <motion.tr
                     key={conversation_id}
                     initial={{ opacity: 0, x: -10 }}
@@ -122,12 +133,22 @@ export default function Dashboard() {
                     className="border-b border-[#18181B] hover:bg-[#18181B] transition-colors duration-150 group"
                     data-testid={`conv-row-${conversation_id}`}
                   >
-                    <td className="px-4 py-3 text-[#8B5CF6] max-w-[180px] truncate">{conversation_id}</td>
-                    <td className="px-4 py-3 text-[#F4F4F5]">{stats?.total_messages ?? '--'}</td>
-                    <td className="px-4 py-3 text-[#4F46E5]">{stats?.total_topics ?? '--'}</td>
-                    <td className="px-4 py-3 text-[#10B981]">{stats?.total_chunks ?? '--'}</td>
-                    <td className="px-4 py-3 text-[#A1A1AA]">
-                      {stats?.estimated_raw_tokens ? `${(stats.estimated_raw_tokens / 1000).toFixed(1)}K` : '--'}
+                    <td className="px-4 py-3 text-[#8B5CF6] max-w-[180px] truncate font-mono-ibm">{conversation_id}</td>
+                    <td className="px-4 py-3 text-[#F4F4F5] font-mono-ibm">{stats?.total_messages ?? '--'}</td>
+                    <td className="px-4 py-3 text-[#4F46E5] font-mono-ibm">{stats?.total_topics ?? '--'}</td>
+                    <td className="px-4 py-3 text-[#10B981] font-mono-ibm">{stats?.total_chunks ?? '--'}</td>
+                    <td className="px-4 py-3 text-[#A1A1AA] font-mono-ibm">
+                      {rawTok ? `${(rawTok / 1000).toFixed(1)}K` : '--'}
+                    </td>
+                    <td className="px-4 py-3 font-mono-ibm">
+                      {reduction > 0 ? (
+                        <div className="flex items-center gap-2">
+                          <div className="h-1 w-16 bg-[#18181B]">
+                            <div className="h-full bg-[#10B981]" style={{ width: `${reduction}%` }} />
+                          </div>
+                          <span className="text-[#10B981] font-bold">{reduction}%</span>
+                        </div>
+                      ) : <span className="text-[#3F3F46]">—</span>}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2 opacity-20 group-hover:opacity-100 transition-opacity duration-200">
@@ -158,7 +179,8 @@ export default function Dashboard() {
                       </div>
                     </td>
                   </motion.tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

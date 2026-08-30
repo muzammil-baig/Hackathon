@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
@@ -13,13 +13,20 @@ function layoutTree(treeData) {
   const root = nodes[root_id];
   if (!root) return { positions: {}, svgW: 600, svgH: 460 };
 
-  const PAD = 70, ROOT_Y = 60, TOPIC_Y = 220, CHUNK_Y = 380;
-  const CHUNK_SPACING = 65, TOPIC_MIN_W = 130;
+  const PAD = 60, ROOT_Y = 70, TOPIC_Y = 230, CHUNK_Y = 390;
+  const TOPIC_MIN_W = 120;
 
   const topicIds = root.children_ids || [];
   const topicChunks = topicIds.map(tid => nodes[tid]?.children_ids || []);
-  const topicWidths = topicChunks.map(cks => Math.max(TOPIC_MIN_W, cks.length * CHUNK_SPACING));
-  const totalW = topicWidths.reduce((s, w) => s + w + 20, 0) - 20 + PAD * 2;
+  
+  // Adaptive chunk spacing for large trees
+  const totalChunks = topicChunks.reduce((s, c) => s + c.length, 0);
+  const CHUNK_SPACING = Math.max(38, Math.min(65, 900 / Math.max(1, totalChunks)));
+  
+  const topicWidths = topicChunks.map(cks =>
+    Math.max(TOPIC_MIN_W, cks.length * CHUNK_SPACING)
+  );
+  const totalW = topicWidths.reduce((s, w) => s + w + 16, 0) - 16 + PAD * 2;
   const svgW = Math.max(600, totalW);
   const positions = {};
 
@@ -31,9 +38,9 @@ function layoutTree(treeData) {
     const cx = xOff + tw / 2;
     positions[tid] = { x: cx, y: TOPIC_Y };
     const cks = topicChunks[i];
-    const startX = xOff + (tw - (cks.length - 1) * CHUNK_SPACING) / 2;
+    const startX = xOff + (tw - (Math.max(cks.length - 1, 0)) * CHUNK_SPACING) / 2;
     cks.forEach((cid, ci) => { positions[cid] = { x: startX + ci * CHUNK_SPACING, y: CHUNK_Y }; });
-    xOff += tw + 20;
+    xOff += tw + 16;
   });
 
   return { positions, svgW, svgH: CHUNK_Y + 80 };
@@ -131,6 +138,7 @@ export default function TreeView() {
   const [selectedNode, setSelectedNode] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const treeContainerRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -154,6 +162,17 @@ export default function TreeView() {
   }, [selectedConv, loadTree]);
 
   useEffect(() => { if (paramId) setSelectedConv(paramId); }, [paramId]);
+
+  // Auto-scroll to center the ROOT node after tree loads
+  useEffect(() => {
+    if (!treeData || !treeContainerRef.current) return;
+    const { positions } = layoutTree(treeData);
+    const rootPos = positions[treeData.root_id];
+    if (rootPos) {
+      const containerW = treeContainerRef.current.clientWidth;
+      treeContainerRef.current.scrollLeft = Math.max(0, rootPos.x - containerW / 2);
+    }
+  }, [treeData]);
 
   const selectedNodeData = selectedNode ? treeData?.nodes?.[selectedNode] : null;
 
@@ -205,7 +224,8 @@ export default function TreeView() {
       <div className="flex gap-4">
         {/* Tree canvas */}
         <div className={`flex-1 bg-[#0F0F11] border border-[#27272A] overflow-auto min-h-[480px] ${selectedNode ? "max-w-[calc(100%-320px)]" : ""}`}
-          data-testid="tree-canvas">
+          data-testid="tree-canvas"
+          ref={treeContainerRef}>
           {loading && (
             <div className="flex items-center justify-center h-full min-h-[300px]">
               <div className="text-[#71717A] font-mono-ibm text-xs animate-pulse">LOADING TREE...</div>

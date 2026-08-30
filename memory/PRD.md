@@ -107,3 +107,4 @@ Users lose context in long AI chats because platforms either drop old messages o
 ## Test Conversations
 - `test-demo-1` — 4 messages about RAPTOR (small demo)
 - `test-index-flow` — 12 messages about ML (created by testing agent)
+- `ml-recommendation-system` — **52 messages (16.9K raw tokens)** — Production ML recommendation system design: FAISS ANN search, tiered Redis caching, EKS vs Lambda, daily retraining pipeline, cold start, fairness, A/B testing, disaster recovery, GDPR compliance. **5 topics, 49 chunks, 77% token reduction** (3.8K context / 16.9K raw)
