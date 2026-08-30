@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>ConvoMemory</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="popup">
+  <!-- Header -->
+  <header class="popup-header">
+    <div class="header-brand">
+      <div class="brand-icon">M</div>
+      <span class="brand-name">ConvoMemory</span>
+    </div>
+    <button class="icon-btn" id="settingsToggle" title="Settings" data-testid="settings-toggle-btn">&#9881;</button>
+  </header>
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <span class="status-dot" id="statusDot"></span>
+    <span class="status-text" id="statusText">Connecting...</span>
+  </div>
+
+  <!-- Main content -->
+  <main class="popup-main" id="mainContent">
+
+    <!-- STATE: not_indexed -->
+    <section id="stateNotIndexed" class="state hidden">
+      <p class="state-label">NOT INDEXED</p>
+      <p class="state-sub" id="msgCountLine">Detected <b id="msgCount">--</b> messages</p>
+      <label class="field-label">CONVERSATION ID</label>
+      <input type="text" id="convIdInput" class="input" placeholder="my-convo-1" data-testid="conv-id-input" />
+      <button class="btn btn-primary" id="indexBtn" data-testid="index-btn">Index Conversation</button>
+    </section>
+
+    <!-- STATE: indexing -->
+    <section id="stateIndexing" class="state hidden">
+      <div class="spinner"></div>
+      <p class="state-label">INDEXING</p>
+      <p class="state-sub" id="indexProgress">Building RAPTOR tree (~60s)</p>
+    </section>
+
+    <!-- STATE: indexed -->
+    <section id="stateIndexed" class="state hidden">
+      <div class="index-badge" data-testid="indexed-badge">
+        <span class="badge-success">INDEXED</span>
+        <span class="stat-pill" id="statMsgs">-- msgs</span>
+        <span class="stat-pill" id="statTopics">-- topics</span>
+        <span class="stat-pill" id="statChunks">-- chunks</span>
+      </div>
+      <textarea id="queryInput" class="textarea" rows="3"
+        placeholder="Ask a question about this conversation..." data-testid="query-input"></textarea>
+      <button class="btn btn-primary" id="askBtn" data-testid="ask-btn">Ask</button>
+
+      <div id="stateThinking" class="thinking hidden">
+        <div class="spinner-sm"></div>
+        <span>Thinking...</span>
+      </div>
+
+      <div id="answerPanel" class="answer-panel hidden" data-testid="answer-panel">
+        <div class="answer-text" id="answerText" data-testid="answer-text"></div>
+        <div class="token-bar-wrap">
+          <div class="token-bar"><div class="token-fill" id="tokenFill"></div></div>
+          <div class="token-meta" data-testid="token-meta">
+            <span id="tokenUsed">0</span>/<span id="tokenBudgetEl">4000</span>t
+            <span class="reduction" id="reductionText"> · 0% less than raw</span>
+          </div>
+        </div>
+        <button class="sources-btn" id="sourcesToggle" data-testid="sources-toggle">Show sources</button>
+        <div id="sourcesList" class="sources-list hidden"></div>
+      </div>
+    </section>
+
+    <!-- STATE: dom_fail -->
+    <section id="stateDomFail" class="state hidden">
+      <p class="warn-label">DOM EXTRACTION FAILED</p>
+      <p class="state-sub">Paste conversation text below:</p>
+      <textarea id="pasteArea" class="textarea mono" rows="5"
+        placeholder="Human: ...&#10;Assistant: ..." data-testid="paste-area"></textarea>
+      <button class="btn btn-primary" id="pasteIndexBtn" data-testid="paste-index-btn">Index Pasted Text</button>
+    </section>
+
+    <!-- STATE: error -->
+    <section id="stateError" class="state hidden">
+      <p class="warn-label">ERROR</p>
+      <p class="error-text" id="errorMsg" data-testid="error-msg">An error occurred</p>
+      <button class="btn btn-secondary" id="retryBtn" data-testid="retry-btn">Retry</button>
+    </section>
+
+  </main>
+
+  <!-- Settings panel -->
+  <aside id="settingsPanel" class="settings-panel hidden">
+    <p class="settings-title">SETTINGS</p>
+    <label class="field-label">BACKEND URL</label>
+    <input type="text" id="backendUrlInput" class="input" placeholder="http://localhost:8001" data-testid="backend-url-input" />
+    <label class="field-label">TOKEN BUDGET: <span id="budgetDisplay">4000</span></label>
+    <input type="range" id="budgetRange" min="1000" max="8000" step="500" value="4000" data-testid="budget-range" />
+    <label class="field-label">MODEL</label>
+    <select id="modelSelect" class="select" data-testid="model-select">
+      <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
+      <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (Fast)</option>
+    </select>
+    <div class="settings-actions">
+      <button class="btn btn-primary" id="saveSettingsBtn" data-testid="save-settings-btn">Save</button>
+      <button class="btn btn-secondary" id="closeSettingsBtn" data-testid="close-settings-btn">Cancel</button>
+    </div>
+  </aside>
+</div>
+<script src="popup.js"></script>
+</body>
+</html>

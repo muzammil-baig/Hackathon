@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "ConvoMemory - RAPTOR Memory",
+  "version": "1.0.0",
+  "description": "Hierarchical token-aware memory layer for Claude conversations",
+  "permissions": ["storage", "tabs", "activeTab", "scripting"],
+  "host_permissions": [
+    "https://claude.ai/*",
+    "http://localhost/*",
+    "https://*.preview.emergentagent.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://claude.ai/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "ConvoMemory"
+  }
+}

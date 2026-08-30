@@ -1,0 +1,113 @@
+{
+  "theme": "dark",
+  "typography": {
+    "headings": "IBM Plex Mono",
+    "body": "IBM Plex Sans",
+    "weights": {
+      "light": 300,
+      "regular": 400,
+      "medium": 500,
+      "bold": 700
+    },
+    "scale": {
+      "h1": "text-4xl tracking-tighter",
+      "h2": "text-2xl tracking-tight",
+      "h3": "text-lg tracking-tight",
+      "body": "text-sm leading-relaxed",
+      "labels": "text-xs tracking-[0.2em] uppercase"
+    },
+    "instructions": "Avoid Inter/Roboto. Use IBM Plex Mono for all numeric data, headings, code snippets, and tree nodes to give a research-grade technical vibe. Ensure all labels are uppercase with wide letter spacing."
+  },
+  "colors": {
+    "background": {
+      "main": "#050505",
+      "surface": "#0F0F11",
+      "surfaceHover": "#18181B"
+    },
+    "text": {
+      "primary": "#F4F4F5",
+      "secondary": "#A1A1AA",
+      "muted": "#71717A"
+    },
+    "accents": {
+      "primary": "#8B5CF6",
+      "rootNode": "#8B5CF6",
+      "topicNode": "#4F46E5",
+      "chunkNode": "#10B981"
+    },
+    "borders": {
+      "default": "#27272A",
+      "active": "#3F3F46"
+    },
+    "forbidden": [
+      "#7351B7",
+      "#1B93A4",
+      "transparent backgrounds on overlays"
+    ],
+    "instructions": "Rely heavily on technical borders and structural grayscale. Avoid large gradient washes. Color is function: use #8B5CF6 (Purple) for ROOT, #4F46E5 (Indigo) for TOPIC, and #10B981 (Emerald) for CHUNK nodes in the RAPTOR tree. Headers and overlays MUST have a solid or blurred opaque background (e.g., bg-black/80 backdrop-blur-md), NEVER fully transparent."
+  },
+  "visual_enhancers": {
+    "surfaces": "Grid Borders (Technical Look). Expose the skeleton. Use border-collapse style layouts with 1px borders (border-border/40) on items. Use sharp 0px or 4px (rounded-sm) radiuses.",
+    "effects": "Use high-contrast data display. Use mono-spaced font layouts for stats.",
+    "glassmorphism": "Avoid soft glassmorphism for data panels; use solid dark backgrounds with strict borders for data clarity. For fixed headers, use heavy blur (backdrop-blur-xl bg-black/90)."
+  },
+  "grids_layouts": {
+    "dashboard": "Mode B: High Density Grid. grid-cols-1 md:grid-cols-4. Tight gaps (gap-4 or gap-6). Use all vertical space.",
+    "tree_view": "Full bleed container with controls absolutely positioned in corners.",
+    "spacing": "Generous inner padding for structural elements (p-6, p-8) to avoid text collision with borders."
+  },
+  "components": {
+    "raptor_tree": {
+      "path": "src/components/RaptorTree.js",
+      "instructions": "Build an SVG-based interactive tree or node map. Use <svg> for bezier-curve connector lines (stroke-zinc-800). Use framer-motion for node entry animations (scale-up). Each node displays context upon hover/click. Nodes color-coded: Root(Purple), Topic(Indigo), Chunk(Emerald)."
+    },
+    "query_interface": {
+      "path": "src/components/QueryPanel.js",
+      "instructions": "Chat-style UI with a prominent Token Budget Bar at the top or bottom. The token bar must visually show the reduction % (e.g., standard context vs RAPTOR retrieved context)."
+    },
+    "stat_cards": {
+      "path": "src/components/StatCard.js",
+      "instructions": "Cardless style or flat rectangular cards with 1px zinc-800 borders, no shadow. Big mono numbers, small uppercase tracking labels."
+    }
+  },
+  "motion": {
+    "interactions": "Hover states on all buttons (translate-y-[1px], border brightness increase).",
+    "transitions": "Specific transitions only (e.g., transition-colors duration-200). DO NOT use 'transition-all'.",
+    "tree_animations": "Staggered entrance for tree nodes using Framer Motion."
+  },
+  "accessibility": {
+    "contrast": "Ensure all text, especially within accent-colored nodes, meets APCA/WCAG standards (use black text inside bright Emerald nodes if they are filled, or use outline styles with bright text).",
+    "focus": "focus:ring-2 focus:ring-primary focus:outline-none.",
+    "test_ids": "All interactive and key informational elements MUST include a data-testid attribute in kebab-case."
+  },
+  "media": {
+    "icons": "Use 'lucide-react' with crisp, minimal implementation. Set strokeWidth={1.5} for a precise technical feel. Do NOT use emojis."
+  },
+  "instructions_to_main_agent": [
+    "You are building a high-tech AI memory developer tool. The aesthetic must be brutalist, data-first, and highly structured.",
+    "Use IBM Plex Mono for all numbers, metrics, and headers. Use IBM Plex Sans for body copy.",
+    "In the RAPTOR tree SVG, ensure paths use smooth bezier curves (d=\"M... C...\") for elegance, contrasting the sharp UI.",
+    "The Token Bar must clearly indicate saved tokens vs budget. Use Shadcn Progress or custom divs with the emerald/indigo accent colors.",
+    "Do not center-align paragraphs. Everything should be left-aligned for data readability.",
+    "Do not add emojis to icons or text.",
+    "Use exact colors provided: Root (#8B5CF6), Topic (#4F46E5), Chunk (#10B981). Do not use the forbidden #7351B7.",
+    "DO NOT use App.css to center text (text-align: center). Keep layout alignment structural.",
+    "All components must be written in .js (React JS), not TypeScript.",
+    "Apply data-testid to all actionable components (buttons, links, form inputs) and important stats."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "You tend to converge toward generic, 'on distribution' outputs. Make creative, distinctive frontends that surprise and delight.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "You MUST NOT apply universal transition. Eg: transition: all. Always add transitions for specific interactive elements.",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file.",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations.",
+    "NEVER use AI assistant Emoji characters.",
+    "Every interaction needs micro-animations - hover states, transitions.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Prioritize using pre-existing components from src/components/ui when applicable.",
+    "Use sonner for toasts.",
+    "Examine existing components to understand the project's component patterns before creating new ones."
+  ]
+}
